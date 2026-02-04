@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { useProjectStore } from '@/stores/project'
 import team from '@/assets/images/team.jpg'
 import video from '@/assets/images/video.jpg'
-import project1 from '@/assets/images/project 1.webp'
-import project2 from '@/assets/images/project 2.webp'
-import project3 from '@/assets/images/project3.webp'
-import Project4 from '@/assets/images/project4.webp'
 import user1 from '@/assets/images/user 1.jpg'
+
+// Initialize project store
+const projectStore = useProjectStore()
 
 // Type definitions
 interface Testimonial {
@@ -31,9 +31,23 @@ interface BlogCard {
 // Navigation state with explicit types
 const currentTestimonial = ref<number>(0)
 const expandedFaq = ref<number>(0)
-const selectedCategory = ref<number>(0)
+const selectedCategory = ref<number | 'all'>('all')
 const testimonialDirection = ref<'left' | 'right'>('right')
 const isAnimating = ref<boolean>(false)
+
+// Get data from store
+const projects = computed(() => projectStore.projects)
+const categories = computed(() => projectStore.categories)
+const isLoadingProjects = computed(() => projectStore.isLoading)
+const featuredProjects = computed(() => projectStore.featuredProjects)
+
+// Display first 3 featured projects or first 3 projects
+const displayedProjects = computed(() => {
+  if (featuredProjects.value.length >= 3) {
+    return featuredProjects.value.slice(0, 3)
+  }
+  return projects.value.slice(0, 3)
+})
 
 // Testimonials data with type annotation
 const testimonials = ref<Testimonial[]>([
@@ -73,12 +87,13 @@ const faqs = ref<FAQ[]>([
   },
 ])
 
-// Categories for case studies with type annotation
-const categories = ref<string[]>([
-  'All Work [30]',
-  'Local Dining [04]',
-  'Digital Marketing [8]',
-  'Branding [4]',
+// Category options with "All Work"
+const categoryOptions = computed(() => [
+  { id: 'all' as const, name: `All Work [${projectStore.totalRecords}]`, value: 'all' },
+  ...categories.value.map(cat => {
+    const count = projectStore.projectsByCategory(cat.id).length
+    return { id: cat.id, name: `${cat.name} [${count}]`, value: cat.id }
+  })
 ])
 
 // Blog cards data with type annotation
@@ -117,8 +132,14 @@ const toggleFaq = (index: number): void => {
   expandedFaq.value = expandedFaq.value === index ? -1 : index
 }
 
-const selectCategory = (index: number): void => {
-  selectedCategory.value = index
+const selectCategory = async (categoryValue: number | 'all'): Promise<void> => {
+  selectedCategory.value = categoryValue
+
+  if (categoryValue === 'all') {
+    await projectStore.fetchAllProjects(1)
+  } else {
+    await projectStore.fetchProjectsByCategory(categoryValue, 1)
+  }
 }
 
 const nextTestimonial = (): void => {
@@ -150,6 +171,17 @@ const previousTestimonial = (): void => {
     }, 50)
   }, 300)
 }
+
+// Handle image error
+const handleImageError = (event: Event) => {
+  const img = event.target as HTMLImageElement
+  img.src = 'https://via.placeholder.com/400x300?text=No+Image'
+}
+
+// Initialize data on mount
+onMounted(async () => {
+  await projectStore.fetchAllProjects()
+})
 </script>
 
 <template>
@@ -219,7 +251,7 @@ const previousTestimonial = (): void => {
                 class="relative w-full rounded-[20px] bg-gray-lighter/60 p-6 backdrop-blur-[42px] md:w-[259px] hover:shadow-lg transition">
                 <div class="flex flex-col gap-8">
                   <h2 class="text-[84px] font-bold leading-[150%] tracking-[-0.03em] text-dark">
-                    230+
+                    {{ projectStore.totalRecords }}+
                   </h2>
                   <p class="text-base font-medium leading-[150%] text-gray">
                     some big companies that we work with, and trust us very much
@@ -296,21 +328,21 @@ const previousTestimonial = (): void => {
           <div class="rounded-[20px] bg-dark p-8 md:hidden lg:block hover:shadow-xl transition">
             <div class="flex flex-col gap-6">
               <h2 class="text-6xl font-bold leading-[150%] tracking-[-0.03em] text-white lg:text-[84px]">
-                920+
+                {{ projectStore.totalRecords }}+
               </h2>
               <p class="max-w-[200px] text-sm font-medium leading-[150%] text-white">
                 Projects that were successfully
               </p>
               <div class="flex items-center gap-2">
-                <img :src="project1" alt="Project 1"
-                  class="h-[80px] w-[80px]  object-cover rounded-full border-2 border-white/50 bg-[#C6C6C6] hover:scale-125 transition" />
-                <img :src="project2" alt="Project 2"
-                  class="h-[80px] w-[80px]   object-cover rounded-full border-2 border-white/50 bg-[#C6C6C6] hover:scale-125 transition" />
-                <img :src="project3" alt="Project 3"
-                  class="h-[80px] w-[80px] object-cover rounded-full border-2 border-white/50 bg-[#C6C6C6] hover:scale-125 transition" />
-                <img :src="Project4" alt="Project 4"
-                  class="h-[80px] w-[80px] object-cover rounded-full border-2 border-white/50 bg-[#C6C6C6] hover:scale-125 transition" />
-                <span class="text-5xl font-bold text-white">+</span>
+                <img
+                  v-for="(project, index) in displayedProjects.slice(0, 4)"
+                  :key="project.id"
+                  :src="projectStore.getImageUrl(project.thumbnail_url)"
+                  :alt="project.title"
+                  @error="handleImageError"
+                  class="h-[80px] w-[80px] object-cover rounded-full border-2 border-white/50 bg-[#C6C6C6] hover:scale-125 transition"
+                />
+                <span v-if="projectStore.totalRecords > 4" class="text-5xl font-bold text-white">+</span>
               </div>
             </div>
           </div>
@@ -350,26 +382,39 @@ const previousTestimonial = (): void => {
           <!-- Category filters -->
           <div class="flex flex-wrap justify-center gap-3">
             <button
-              v-for="(category, index) in categories"
-              :key="index"
-              @click="selectCategory(index)"
+              v-for="category in categoryOptions"
+              :key="category.id"
+              @click="selectCategory(category.id)"
+              :disabled="isLoadingProjects"
               :class="[
                 'rounded-[50px] px-6 py-3 text-sm font-semibold leading-[126%] tracking-tight transition hover:scale-105 active:scale-95',
-                selectedCategory === index
+                selectedCategory === category.id
                   ? 'bg-primary text-dark'
                   : 'border border-white/30 text-white hover:bg-white/10',
+                isLoadingProjects && 'opacity-50 cursor-not-allowed'
               ]">
-              {{ category }}
+              {{ category.name }}
             </button>
           </div>
 
+          <!-- Loading State -->
+          <div v-if="isLoadingProjects" class="text-center py-12">
+            <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            <p class="text-white mt-4">Loading projects...</p>
+          </div>
+
           <!-- Case study cards -->
-          <div class="grid w-full grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
-            <!-- Card 1 - Circular with See Details -->
-            <div class="relative animate-fade-in hover:scale-105 transition">
+          <div v-else-if="displayedProjects.length > 0" class="grid w-full grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+            <!-- First Card - Circular with See Details -->
+            <div v-if="displayedProjects[0]" class="relative animate-fade-in hover:scale-105 transition">
               <div
                 class="overflow-hidden rounded-[261px] border-[11px] border-white/40 backdrop-blur-[67px] hover:border-white/60 transition">
-                <img :src="project1" alt="Case study project" class="h-auto w-full hover:scale-110 transition duration-500" />
+                <img
+                  :src="projectStore.getImageUrl(displayedProjects[0].thumbnail_url)"
+                  :alt="displayedProjects[0].title"
+                  @error="handleImageError"
+                  class="h-auto w-full hover:scale-110 transition duration-500"
+                />
               </div>
               <div
                 class="absolute left-1/2 top-1/2 flex h-[163px] w-[163px] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-primary hover:scale-110 transition cursor-pointer">
@@ -377,52 +422,68 @@ const previousTestimonial = (): void => {
               </div>
             </div>
 
-            <!-- Card 2 - Ai Wave -->
+            <!-- Second Card -->
             <div
+              v-if="displayedProjects[1]"
               class="relative overflow-hidden rounded-[30px] border-[10px] border-white/30 backdrop-blur-[67px] hover:border-white/50 transition animate-fade-in hover:scale-105"
               style="animation-delay: 0.1s">
-              <img :src="project2" alt="Ai Wave project"
-                class="h-full w-full object-cover hover:scale-110 transition duration-500" />
+              <img
+                :src="projectStore.getImageUrl(displayedProjects[1].thumbnail_url)"
+                :alt="displayedProjects[1].title"
+                @error="handleImageError"
+                class="h-full w-full object-cover hover:scale-110 transition duration-500"
+              />
               <div class="absolute left-8 top-8 flex items-center gap-3">
                 <svg width="54" height="1" viewBox="0 0 54 1" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M0 0.5H54" stroke="white" />
                 </svg>
                 <span class="text-[17px] font-semibold leading-[126%] tracking-tight text-white">
-                  Ai Corporation. 2023
+                  {{ displayedProjects[1].client_name }}. {{ projectStore.getYear(displayedProjects[1].created_at) }}
                 </span>
               </div>
               <div class="absolute bottom-8 left-8 max-w-[374px]">
                 <h3 class="text-2xl font-semibold leading-[140%] text-white">
-                  Ai Wave - Ai Chatbot Mobile App
+                  {{ displayedProjects[1].title }}
                 </h3>
               </div>
             </div>
 
-            <!-- Card 3 - App Lancer -->
+            <!-- Third Card -->
             <div
+              v-if="displayedProjects[2]"
               class="relative overflow-hidden rounded-[30px] border-[10px] border-white/30 backdrop-blur-[67px] hover:border-white/50 transition animate-fade-in hover:scale-105"
               style="animation-delay: 0.2s">
-              <img :src="project3" alt="App Lancer project"
-                class="h-full w-full object-cover hover:scale-110 transition duration-500" />
+              <img
+                :src="projectStore.getImageUrl(displayedProjects[2].thumbnail_url)"
+                :alt="displayedProjects[2].title"
+                @error="handleImageError"
+                class="h-full w-full object-cover hover:scale-110 transition duration-500"
+              />
               <div class="absolute left-8 top-8 flex items-center gap-3">
                 <svg width="54" height="1" viewBox="0 0 54 1" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M0 0.5H54" stroke="white" />
                 </svg>
                 <span class="text-[17px] font-semibold leading-[126%] tracking-tight text-white">
-                  Lancer Corporation. 2023
+                  {{ displayedProjects[2].client_name }}. {{ projectStore.getYear(displayedProjects[2].created_at) }}
                 </span>
               </div>
               <div class="absolute bottom-8 left-8 max-w-[405px]">
                 <h3 class="text-2xl font-semibold leading-[140%] text-white">
-                  App Lancer - Freelance Mobile App
+                  {{ displayedProjects[2].title }}
                 </h3>
               </div>
             </div>
+          </div>
+
+          <!-- Empty State -->
+          <div v-else class="text-center py-12">
+            <p class="text-white text-lg">No projects available yet.</p>
           </div>
         </div>
       </div>
     </section>
 
+    <!-- Rest of the sections remain the same... -->
     <!-- Testimonial Section -->
     <section class="bg-[#FAFAFA] px-5 py-16 md:px-20 md:py-20 animate-fade-in">
       <div class="mx-auto">

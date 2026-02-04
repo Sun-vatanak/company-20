@@ -1,94 +1,57 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed, onMounted } from 'vue';
+import { useProjectStore } from '@/stores/project';
 
-const selectedCategory = ref('all')
+const projectStore = useProjectStore();
+const selectedCategoryId = ref<number | 'all'>('all');
 
-const caseStudies = [
-  {
-    id: 1,
-    title: 'Ai Wave - Ai Chatbot Mobile App',
-    category: 'app',
-    client: 'Ai Corporation',
-    year: 2023,
-    challenge: 'Build an innovative AI chatbot application with intuitive UX.',
-    result: '+250% user engagement',
-    description:
-      'Developed a cutting-edge AI chatbot mobile application with seamless user experience and advanced AI capabilities.',
-  },
-  {
-    id: 2,
-    title: 'App Lancer - Freelance Mobile App',
-    category: 'app',
-    client: 'Lancer Corporation',
-    year: 2023,
-    challenge: 'Create a competitive freelance marketplace platform.',
-    result: '+180% app downloads',
-    description:
-      'Built a comprehensive freelance marketplace with advanced matching algorithms and payment integration.',
-  },
-  {
-    id: 3,
-    title: 'E-commerce Platform Optimization',
-    category: 'ecommerce',
-    client: 'TechStore Inc',
-    year: 2023,
-    challenge: 'Increase online sales and customer retention.',
-    result: '+320% revenue growth',
-    description:
-      'Optimized e-commerce platform with improved UX, faster checkout, and personalized recommendations.',
-  },
-  {
-    id: 4,
-    title: 'SaaS Marketing Campaign',
-    category: 'marketing',
-    client: 'CloudSync',
-    year: 2023,
-    challenge: 'Increase brand awareness in competitive SaaS market.',
-    result: '+450% qualified leads',
-    description:
-      'Executed multi-channel marketing campaign including content, SEO, and paid advertising.',
-  },
-  {
-    id: 5,
-    title: 'Local Restaurant Chain Branding',
-    category: 'branding',
-    client: 'Taste & Flavor',
-    year: 2023,
-    challenge: 'Rebrand and increase customer acquisition.',
-    result: '+210% foot traffic',
-    description:
-      'Complete brand refresh including logo, website, social media, and local marketing strategy.',
-  },
-  {
-    id: 6,
-    title: 'Healthcare Digital Transformation',
-    category: 'digital',
-    client: 'MediCare Plus',
-    year: 2023,
-    challenge: 'Modernize patient engagement and online services.',
-    result: '+340% online appointments',
-    description:
-      'Developed patient portal, telemedicine integration, and digital marketing strategy.',
-  },
-]
+// Computed properties from store
+const projects = computed(() => projectStore.projects);
+const categories = computed(() => projectStore.categories);
+const isLoading = computed(() => projectStore.isLoading);
+const currentPage = computed(() => projectStore.currentPage);
+const totalPages = computed(() => projectStore.totalPages);
+const totalRecords = computed(() => projectStore.totalRecords);
 
-const categories = [
-  { value: 'all', label: 'All Projects' },
-  { value: 'app', label: 'Mobile Apps' },
-  { value: 'ecommerce', label: 'E-Commerce' },
-  { value: 'marketing', label: 'Marketing' },
-  { value: 'branding', label: 'Branding' },
-  { value: 'digital', label: 'Digital' },
-]
+// Category options with "All"
+const categoryOptions = computed(() => [
+  { id: 'all' as const, name: 'All Projects' },
+  ...categories.value.map(cat => ({ id: cat.id, name: cat.name }))
+]);
 
-const filteredCaseStudies = computed(() => {
-  if (selectedCategory.value === 'all') {
-    return caseStudies
+// Handle category change
+const handleCategoryChange = async (categoryValue: number | 'all') => {
+  selectedCategoryId.value = categoryValue;
+
+  if (categoryValue === 'all') {
+    await projectStore.fetchAllProjects(1);
+  } else {
+    await projectStore.fetchProjectsByCategory(categoryValue, 1);
   }
-  return caseStudies.filter((study) => study.category === selectedCategory.value)
-})
+};
 
-import { computed } from 'vue'
+// Handle page change
+const handlePageChange = async (page: number) => {
+  await projectStore.changePage(page);
+};
+
+// Handle image loading error
+const handleImageError = (event: Event) => {
+  const img = event.target as HTMLImageElement;
+  console.error('❌ Image failed to load:', img.src);
+  img.src = 'https://via.placeholder.com/400x300?text=No+Image';
+};
+
+// Handle image load success
+const handleImageLoad = (projectTitle: string) => {
+  console.log('✅ Image loaded for:', projectTitle);
+};
+
+// Initialize data on mount
+onMounted(async () => {
+  console.log('🚀 Component mounted, loading projects...');
+  await projectStore.fetchAllProjects();
+});
 </script>
 
 <template>
@@ -105,6 +68,9 @@ import { computed } from 'vue'
           <p class="text-xl text-gray max-w-2xl animate-slide-down" style="animation-delay: 0.1s">
             Explore real-world examples of how we've helped companies achieve their goals.
           </p>
+          <p class="text-sm text-gray animate-slide-down" style="animation-delay: 0.2s">
+            Total Projects: {{ totalRecords }}
+          </p>
         </div>
       </div>
     </section>
@@ -114,54 +80,88 @@ import { computed } from 'vue'
       <div class="mx-auto max-w-6xl">
         <div class="flex flex-wrap gap-3 justify-center animate-fade-in">
           <button
-            v-for="category in categories"
-            :key="category.value"
-            @click="selectedCategory = category.value"
+            v-for="category in categoryOptions"
+            :key="category.id"
+            @click="handleCategoryChange(category.id)"
             :class="[
               'rounded-[50px] px-6 py-3 font-semibold transition hover:scale-105 active:scale-95',
-              selectedCategory === category.value
+              selectedCategoryId === category.id
                 ? 'bg-primary text-dark'
                 : 'border-2 border-dark text-dark hover:bg-dark/10',
             ]"
+            :disabled="isLoading"
           >
-            {{ category.label }}
+            {{ category.name }}
           </button>
         </div>
       </div>
     </section>
 
+    <!-- Loading State -->
+    <section v-if="isLoading" class="px-5 md:px-20 py-20">
+      <div class="mx-auto max-w-6xl text-center">
+        <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        <p class="text-xl text-gray mt-4">Loading projects...</p>
+      </div>
+    </section>
+
     <!-- Case Studies Grid -->
-    <section class="px-5 md:px-20 py-20">
+    <section v-else class="px-5 md:px-20 py-20">
       <div class="mx-auto max-w-6xl">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <!-- Empty State -->
+        <div v-if="projects.length === 0" class="text-center py-20">
+          <p class="text-xl text-gray">No projects found in this category.</p>
+        </div>
+
+        <!-- Projects Grid -->
+        <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           <div
-            v-for="(study, index) in filteredCaseStudies"
-            :key="study.id"
+            v-for="(project, index) in projects"
+            :key="project.id"
             class="rounded-[20px] overflow-hidden bg-white border-2 border-gray-lighter hover:border-primary hover:shadow-xl transition transform hover:scale-105 animate-fade-in"
             :style="{ animationDelay: `${index * 0.1}s` }"
           >
-            <div class="h-48 bg-gray-lighter hover:scale-110 transition duration-500">
+            <div class="h-48 bg-gray-lighter overflow-hidden relative">
               <img
-                src="https://cdn.builder.io/api/v1/image/assets/TEMP/75a212ab82b6175c9862b125e0e23db8d369a58a"
-                alt=""
-                class="w-full h-full object-cover"
+                :src="projectStore.getImageUrl(project.thumbnail_url)"
+                :alt="project.title"
+                class="w-full h-full object-cover hover:scale-110 transition duration-500"
+                @error="handleImageError"
+                @load="() => handleImageLoad(project.title)"
               />
+              <!-- Debug overlay - Remove in production -->
+              <!-- <div class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-75 text-white text-xs p-2 truncate">
+                {{ projectStore.getImageUrl(project.thumbnail_url) }}
+              </div> -->
             </div>
             <div class="p-6">
               <p class="text-xs text-primary font-bold uppercase tracking-wide mb-2">
-                {{ study.client }} • {{ study.year }}
+                {{ project.client_name }} • {{ projectStore.getYear(project.created_at) }}
               </p>
-              <h3 class="text-xl font-bold text-dark mb-3">{{ study.title }}</h3>
-              <p class="text-gray text-sm mb-4">{{ study.description }}</p>
+              <h3 class="text-xl font-bold text-dark mb-3">{{ project.title }}</h3>
+              <p class="text-gray text-sm mb-4 line-clamp-3">{{ project.description }}</p>
 
               <div class="space-y-3 border-t border-gray-lighter pt-4 mt-4">
                 <div>
-                  <p class="text-xs font-semibold text-dark uppercase">Challenge</p>
-                  <p class="text-sm text-gray">{{ study.challenge }}</p>
+                  <p class="text-xs font-semibold text-dark uppercase">Category</p>
+                  <p class="text-sm text-gray">{{ project.category.name }}</p>
                 </div>
-                <div>
-                  <p class="text-xs font-semibold text-primary uppercase">Result</p>
-                  <p class="text-lg font-bold text-primary">{{ study.result }}</p>
+                <div v-if="project.tech_stack && project.tech_stack.length > 0">
+                  <p class="text-xs font-semibold text-dark uppercase">Tech Stack</p>
+                  <div class="flex flex-wrap gap-2 mt-1">
+                    <span
+                      v-for="tech in project.tech_stack"
+                      :key="tech"
+                      class="inline-block bg-gray-lighter text-dark text-xs px-2 py-1 rounded"
+                    >
+                      {{ tech }}
+                    </span>
+                  </div>
+                </div>
+                <div v-if="project.is_featured">
+                  <span class="inline-block bg-primary text-dark text-xs font-bold px-3 py-1 rounded-full">
+                    ⭐ Featured
+                  </span>
                 </div>
               </div>
 
@@ -172,6 +172,41 @@ import { computed } from 'vue'
               </button>
             </div>
           </div>
+        </div>
+
+        <!-- Pagination -->
+        <div v-if="totalPages > 1" class="mt-12 flex justify-center items-center gap-2 flex-wrap">
+          <button
+            @click="handlePageChange(currentPage - 1)"
+            :disabled="currentPage === 1 || isLoading"
+            class="px-4 py-2 rounded-lg font-semibold transition bg-gray-lighter text-dark hover:bg-gray-light disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Previous
+          </button>
+
+          <button
+            v-for="page in totalPages"
+            :key="page"
+            @click="handlePageChange(page)"
+            :disabled="isLoading"
+            :class="[
+              'px-4 py-2 rounded-lg font-semibold transition',
+              currentPage === page
+                ? 'bg-primary text-dark'
+                : 'bg-gray-lighter text-dark hover:bg-gray-light',
+              'disabled:opacity-50 disabled:cursor-not-allowed'
+            ]"
+          >
+            {{ page }}
+          </button>
+
+          <button
+            @click="handlePageChange(currentPage + 1)"
+            :disabled="currentPage === totalPages || isLoading"
+            class="px-4 py-2 rounded-lg font-semibold transition bg-gray-lighter text-dark hover:bg-gray-light disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Next
+          </button>
         </div>
       </div>
     </section>
@@ -205,5 +240,12 @@ import { computed } from 'vue'
 
 .animate-slide-down {
   animation: slide-down 0.6s ease-out forwards;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 </style>

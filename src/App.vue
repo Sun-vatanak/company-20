@@ -1,7 +1,30 @@
 <script setup lang="ts">
 import { RouterLink, useRoute } from 'vue-router'
+import { ref } from 'vue'
 
 const route = useRoute()
+const isMobileMenuOpen = ref(false)
+
+const toggleMobileMenu = () => {
+  isMobileMenuOpen.value = !isMobileMenuOpen.value
+  // Prevent body scroll when menu is open
+  if (isMobileMenuOpen.value) {
+    document.body.style.overflow = 'hidden'
+  } else {
+    document.body.style.overflow = ''
+  }
+}
+
+const closeMobileMenu = () => {
+  isMobileMenuOpen.value = false
+  document.body.style.overflow = ''
+}
+
+// Close menu when route changes
+import { watch } from 'vue'
+watch(() => route.path, () => {
+  closeMobileMenu()
+})
 </script>
 
 <template>
@@ -9,9 +32,9 @@ const route = useRoute()
     <!-- Header -->
     <header class="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-lighter">
       <div class="mx-auto px-5 md:px-20">
-        <div class="flex h-28 items-center justify-between">
+        <div class="flex h-20 md:h-28 items-center justify-between">
           <!-- Logo -->
-          <RouterLink to="/" class="flex items-center gap-2 hover:opacity-80 transition">
+          <RouterLink to="/" class="flex items-center gap-2 hover:opacity-80 transition" @click="closeMobileMenu">
             <div class="relative h-8 w-8">
               <div class="absolute h-8 w-8 rounded-[3px_3px_53px_3px] bg-primary"></div>
               <div
@@ -23,8 +46,8 @@ const route = useRoute()
             >
           </RouterLink>
 
-          <!-- Navigation -->
-          <nav class="hidden items-center gap-12 md:flex lg:gap-[74px]">
+          <!-- Desktop Navigation -->
+          <nav class="hidden items-center gap-8 lg:flex lg:gap-[74px]">
             <RouterLink
               to="/service"
               :class="[
@@ -76,13 +99,13 @@ const route = useRoute()
             </RouterLink>
 
             <RouterLink
-              to="/case-study"
+              to="/project"
               :class="[
                 'flex items-center gap-[7px] text-sm font-semibold transition hover:text-primary',
-                route.path === '/case-study' ? 'text-primary' : 'text-[#020407]',
+                route.path === '/project' ? 'text-primary' : 'text-[#020407]',
               ]"
             >
-              <span>Case study</span>
+              <span>Project</span>
               <svg
                 width="20"
                 height="20"
@@ -136,8 +159,8 @@ const route = useRoute()
             </RouterLink>
           </nav>
 
-          <!-- CTA Buttons -->
-          <div class="flex items-start gap-[9px]">
+          <!-- Desktop CTA Buttons -->
+          <div class="hidden lg:flex items-start gap-[9px]">
             <button
               class="flex items-center justify-center gap-3 rounded-[50px] border border-dark px-4 py-3 font-manrope text-base font-bold leading-[140%] tracking-tight text-dark transition hover:bg-dark hover:text-white hover:scale-105 active:scale-95"
             >
@@ -170,8 +193,298 @@ const route = useRoute()
               </svg>
             </button>
           </div>
+
+          <!-- Mobile Menu Button -->
+          <button
+            @click="toggleMobileMenu"
+            class="lg:hidden flex items-center justify-center h-10 w-10 rounded-lg hover:bg-gray-lighter transition"
+            :aria-label="isMobileMenuOpen ? 'Close menu' : 'Open menu'"
+            :aria-expanded="isMobileMenuOpen"
+          >
+            <!-- Hamburger Icon -->
+            <svg
+              v-if="!isMobileMenuOpen"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              class="text-dark"
+            >
+              <path
+                d="M3 12H21"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <path
+                d="M3 6H21"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <path
+                d="M3 18H21"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+            <!-- Close Icon -->
+            <svg
+              v-else
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              class="text-dark"
+            >
+              <path
+                d="M18 6L6 18"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <path
+                d="M6 6L18 18"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
         </div>
       </div>
+
+      <!-- Mobile Navigation Menu -->
+      <Transition name="mobile-menu">
+        <div
+          v-if="isMobileMenuOpen"
+          class="lg:hidden absolute top-full left-0 right-0 bg-white border-b border-gray-lighter shadow-xl max-h-[calc(100vh-5rem)] overflow-y-auto"
+        >
+          <nav class="flex flex-col px-5 py-6 gap-1">
+            <RouterLink
+              to="/service"
+              :class="[
+                'flex items-center justify-between px-4 py-4 rounded-lg text-base font-semibold transition hover:bg-gray-lighter',
+                route.path === '/service' ? 'text-primary bg-primary/10' : 'text-[#020407]',
+              ]"
+            >
+              <span>Service</span>
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 20 20"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M7.5 15L12.5 10L7.5 5"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </RouterLink>
+
+            <RouterLink
+              to="/agency"
+              :class="[
+                'flex items-center justify-between px-4 py-4 rounded-lg text-base font-semibold transition hover:bg-gray-lighter',
+                route.path === '/agency' ? 'text-primary bg-primary/10' : 'text-[#020407]',
+              ]"
+            >
+              <span>Agency</span>
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 20 20"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M7.5 15L12.5 10L7.5 5"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </RouterLink>
+
+            <RouterLink
+              to="/project"
+              :class="[
+                'flex items-center justify-between px-4 py-4 rounded-lg text-base font-semibold transition hover:bg-gray-lighter',
+                route.path === '/project' ? 'text-primary bg-primary/10' : 'text-[#020407]',
+              ]"
+            >
+              <span>Project</span>
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 20 20"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M7.5 15L12.5 10L7.5 5"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </RouterLink>
+
+            <RouterLink
+              to="/resources"
+              :class="[
+                'flex items-center justify-between px-4 py-4 rounded-lg text-base font-semibold transition hover:bg-gray-lighter',
+                route.path === '/resources' ? 'text-primary bg-primary/10' : 'text-[#020407]',
+              ]"
+            >
+              <span>Resources</span>
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 20 20"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M7.5 15L12.5 10L7.5 5"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </RouterLink>
+
+            <RouterLink
+              to="/contact"
+              :class="[
+                'flex items-center justify-between px-4 py-4 rounded-lg text-base font-semibold transition hover:bg-gray-lighter',
+                route.path === '/contact' ? 'text-primary bg-primary/10' : 'text-[#020407]',
+              ]"
+            >
+              <span>Contact</span>
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 20 20"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M7.5 15L12.5 10L7.5 5"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </RouterLink>
+
+            <!-- Mobile CTA Buttons -->
+            <div class="flex flex-col gap-3 mt-6 px-4">
+              <button
+                class="w-full flex items-center justify-center gap-3 rounded-[50px] border border-dark px-6 py-4 font-manrope text-base font-bold leading-[140%] tracking-tight text-dark transition hover:bg-dark hover:text-white active:scale-95"
+              >
+                Get started
+              </button>
+              <button
+                class="w-full flex items-center justify-center gap-3 rounded-[50px] bg-dark px-6 py-4 font-manrope text-base font-bold leading-[140%] tracking-tight text-white transition hover:bg-dark/90 active:scale-95"
+              >
+                <svg
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M18 8C18 6.4087 17.3679 4.88258 16.2426 3.75736C15.1174 2.63214 13.5913 2 12 2C10.4087 2 8.88258 2.63214 7.75736 3.75736C6.63214 4.88258 6 6.4087 6 8C6 15 3 17 3 17H21C21 17 18 15 18 8Z"
+                    stroke="white"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                  <path
+                    d="M13.73 21C13.5542 21.3031 13.3019 21.5547 12.9982 21.7295C12.6946 21.9044 12.3504 21.9965 12 21.9965C11.6496 21.9965 11.3054 21.9044 11.0018 21.7295C10.6982 21.5547 10.4458 21.3031 10.27 21"
+                    stroke="white"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+                <span>Notifications</span>
+              </button>
+            </div>
+
+            <!-- Mobile Social Links -->
+            <div class="flex items-center justify-center gap-6 mt-8 px-4 pb-4">
+              <a href="#" class="text-dark transition hover:text-primary hover:scale-125">
+                <svg
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M22 12C22 6.48 17.52 2 12 2C6.48 2 2 6.48 2 12C2 16.84 5.44 20.87 10 21.8V15H8V12H10V9.5C10 7.57 11.57 6 13.5 6H16V9H14C13.45 9 13 9.45 13 10V12H16V15H13V21.95C18.05 21.45 22 17.19 22 12Z"
+                  />
+                </svg>
+              </a>
+              <a href="#" class="text-dark transition hover:text-primary hover:scale-125">
+                <svg
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M22.46 6C21.69 6.35 20.86 6.58 20 6.69C20.88 6.16 21.56 5.32 21.88 4.31C21.05 4.81 20.13 5.16 19.16 5.36C18.37 4.5 17.26 4 16 4C13.65 4 11.73 5.92 11.73 8.29C11.73 8.63 11.77 8.96 11.84 9.27C8.28 9.09 5.11 7.38 3 4.79C2.63 5.42 2.42 6.16 2.42 6.94C2.42 8.43 3.17 9.75 4.33 10.5C3.62 10.5 2.96 10.3 2.38 10C2.38 10 2.38 10 2.38 10.03C2.38 12.11 3.86 13.85 5.82 14.24C5.46 14.34 5.08 14.39 4.69 14.39C4.42 14.39 4.15 14.36 3.89 14.31C4.43 16 6 17.26 7.89 17.29C6.43 18.45 4.58 19.13 2.56 19.13C2.22 19.13 1.88 19.11 1.54 19.07C3.44 20.29 5.70 21 8.12 21C16 21 20.33 14.46 20.33 8.79C20.33 8.6 20.33 8.42 20.32 8.23C21.16 7.63 21.88 6.87 22.46 6Z"
+                  />
+                </svg>
+              </a>
+              <a href="#" class="text-dark transition hover:text-primary hover:scale-125">
+                <svg
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M19 3H5C3.89543 3 3 3.89543 3 5V19C3 20.1046 3.89543 21 5 21H19C20.1046 21 21 20.1046 21 19V5C21 3.89543 20.1046 3 19 3ZM8.339 18.337H5.667V10.003H8.339V18.337ZM7.003 8.819C6.13 8.819 5.428 8.117 5.428 7.243C5.428 6.369 6.131 5.667 7.003 5.667C7.875 5.667 8.577 6.369 8.577 7.243C8.577 8.117 7.876 8.819 7.003 8.819ZM18.338 18.337H15.666V14.162C15.666 13.166 15.647 11.884 14.28 11.884C12.891 11.884 12.68 12.968 12.68 14.089V18.337H10.008V10.003H12.573V11.124H12.608C12.966 10.475 13.836 9.789 15.136 9.789C17.836 9.789 18.338 11.575 18.338 13.892V18.337Z"
+                  />
+                </svg>
+              </a>
+            </div>
+          </nav>
+        </div>
+      </Transition>
+
+      <!-- Backdrop/Overlay -->
+      <Transition name="backdrop">
+        <div
+          v-if="isMobileMenuOpen"
+          @click="closeMobileMenu"
+          class="lg:hidden fixed inset-0 bg-black/50 backdrop-blur-sm -z-10"
+          style="top: 5rem;"
+        ></div>
+      </Transition>
     </header>
 
     <!-- Page Content with smooth transitions -->
@@ -365,6 +678,7 @@ const route = useRoute()
 </template>
 
 <style scoped>
+/* Page transitions */
 .fade-page-enter-active,
 .fade-page-leave-active {
   transition: opacity 0.3s ease;
@@ -375,6 +689,33 @@ const route = useRoute()
 }
 
 .fade-page-leave-to {
+  opacity: 0;
+}
+
+/* Mobile menu transitions */
+.mobile-menu-enter-active,
+.mobile-menu-leave-active {
+  transition: all 0.3s ease;
+}
+
+.mobile-menu-enter-from {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.mobile-menu-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+/* Backdrop transitions */
+.backdrop-enter-active,
+.backdrop-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.backdrop-enter-from,
+.backdrop-leave-to {
   opacity: 0;
 }
 </style>

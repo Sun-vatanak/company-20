@@ -1,50 +1,62 @@
 <script setup lang="ts">
-const services = [
-  {
-    title: 'SEO Optimization',
-    description: 'Improve your search engine rankings and drive organic traffic to your website.',
-    icon: '🔍',
-    features: ['Keyword Research', 'On-page SEO', 'Link Building', 'Technical SEO'],
-  },
-  {
-    title: 'Social Media Marketing',
-    description: 'Engage with your audience and build brand awareness across social platforms.',
-    icon: '📱',
-    features: ['Content Strategy', 'Community Management', 'Paid Ads', 'Analytics'],
-  },
-  {
-    title: 'Content Creation',
-    description: 'Create compelling and engaging content that drives conversions.',
-    icon: '✍️',
-    features: ['Blog Posts', 'Videos', 'Infographics', 'Copywriting'],
-  },
-  {
-    title: 'PPC Advertising',
-    description: 'Get immediate results with targeted paid advertising campaigns.',
-    icon: '💰',
-    features: ['Google Ads', 'Facebook Ads', 'LinkedIn Ads', 'Remarketing'],
-  },
-  {
-    title: 'Email Marketing',
-    description: 'Build relationships and nurture leads with strategic email campaigns.',
-    icon: '📧',
-    features: ['Campaign Design', 'Automation', 'Segmentation', 'Analytics'],
-  },
-  {
-    title: 'Web Design & Development',
-    description: 'Create stunning, responsive websites that convert visitors into customers.',
-    icon: '🌐',
-    features: ['Responsive Design', 'User Experience', 'Mobile Optimization', 'Performance'],
-  },
-]
+import { onMounted, computed } from 'vue'
+import { useserviceStore } from '@/stores/service'
+
+const store = useserviceStore()
+
+const getServiceIcon = (title: string) => {
+  const iconMap: Record<string, string> = {
+    'SEO': '🔍',
+    'Social Media': '📱',
+    'Content': '✍️',
+    'PPC': '💰',
+    'Email': '📧',
+    'Web': '🌐',
+    'Development': '💻',
+    'Design': '🎨',
+    'Marketing': '📊',
+  }
+
+  for (const [key, icon] of Object.entries(iconMap)) {
+    if (title.toLowerCase().includes(key.toLowerCase())) {
+      return icon
+    }
+  }
+
+  return '⭐'
+}
+
+// Get full image URL from API
+const getImageUrl = (imagePath: string) => {
+  const baseUrl = import.meta.env.VITE_API_HOST || 'http://localhost:8000'
+  return `${baseUrl}/storage/${imagePath}`
+}
+
+onMounted(async () => {
+  await store.fetchServices()
+})
+
+const handleImageError = (e: Event) => {
+  const img = e.target as HTMLImageElement
+  img.src = 'https://via.placeholder.com/400x300?text=No+Image'
+}
+
+const services = computed(() => {
+  return store.services.map(service => ({
+    id: service.id,
+    title: service.title,
+    description: service.description,
+    image: service.image,
+    icon: getServiceIcon(service.title),
+    features: service.features.map(f => f.name),
+    button_link: service.button_link || '#'
+  }))
+})
 </script>
 
 <template>
   <div class="min-h-screen bg-white">
-    <!-- Hero Section -->
-    <section
-      class="relative overflow-hidden bg-gradient-to-br from-white to-gray-lighter py-20 px-5 md:px-20"
-    >
+    <section class="relative overflow-hidden bg-gradient-to-br from-white to-gray-lighter py-20 px-5 md:px-20">
       <div class="mx-auto max-w-6xl">
         <div class="flex flex-col gap-8 animate-fade-in">
           <h1 class="text-5xl md:text-6xl font-bold text-dark leading-tight animate-slide-down">
@@ -58,49 +70,77 @@ const services = [
       </div>
     </section>
 
-    <!-- Services Grid -->
-    <section class="px-5 md:px-20 py-20">
+    <section v-if="store.isLoading" class="px-5 md:px-20 py-20">
+      <div class="mx-auto max-w-6xl text-center">
+        <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        <p class="mt-4 text-gray">Loading services...</p>
+      </div>
+    </section>
+
+    <section v-else class="px-5 md:px-20 py-20">
       <div class="mx-auto max-w-6xl">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div v-if="services.length === 0" class="text-center py-12">
+          <p class="text-xl text-gray">No services available at the moment.</p>
+        </div>
+
+        <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           <div
             v-for="(service, index) in services"
-            :key="index"
-            class="group rounded-[20px] bg-white border-2 border-gray-lighter p-8 hover:border-primary hover:shadow-xl transition transform hover:scale-105 animate-fade-in"
+            :key="service.id"
+            class="group rounded-[20px] bg-white border-2 border-gray-lighter overflow-hidden hover:border-primary hover:shadow-xl transition transform hover:scale-105 animate-fade-in"
             :style="{ animationDelay: `${index * 0.1}s` }"
           >
-            <div class="text-5xl mb-4 group-hover:scale-125 transition duration-300">
-              {{ service.icon }}
+            <!-- Service Image -->
+            <div class="relative h-48 overflow-hidden bg-gray-100">
+              <img
+                v-if="service.image"
+                :src="getImageUrl(service.image)"
+                :alt="service.title"
+                class="w-full h-full object-cover group-hover:scale-110 transition duration-300"
+                @error="handleImageError"
+              />
+              <div
+                v-else
+                class="w-full h-full flex items-center justify-center text-6xl"
+              >
+                {{ service.icon }}
+              </div>
             </div>
-            <h3 class="text-2xl font-bold text-dark mb-3">
-              {{ service.title }}
-            </h3>
-            <p class="text-gray mb-6">
-              {{ service.description }}
-            </p>
-            <div class="space-y-2">
-              <h4 class="text-sm font-semibold text-dark uppercase tracking-wide">Key Features</h4>
-              <ul class="space-y-2">
-                <li
-                  v-for="feature in service.features"
-                  :key="feature"
-                  class="text-sm text-gray flex items-center gap-2"
-                >
-                  <span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
-                  {{ feature }}
-                </li>
-              </ul>
+
+            <!-- Service Content -->
+            <div class="p-8">
+              <h3 class="text-2xl font-bold text-dark mb-3">
+                {{ service.title }}
+              </h3>
+              <p class="text-gray mb-6">
+                {{ service.description }}
+              </p>
+              <div v-if="service.features.length > 0" class="space-y-2">
+                <h4 class="text-sm font-semibold text-dark uppercase tracking-wide">Key Features</h4>
+                <ul class="space-y-2">
+                  <li
+                    v-for="(feature, fIndex) in service.features"
+                    :key="fIndex"
+                    class="text-sm text-gray flex items-center gap-2"
+                  >
+                    <span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+                    {{ feature }}
+                  </li>
+                </ul>
+              </div>
+
+              <a
+                :href="service.button_link"
+                class="mt-8 w-full block text-center rounded-[50px] bg-dark text-white py-3 font-semibold hover:bg-dark/90 transition transform hover:scale-105 active:scale-95"
+              >
+                Learn More
+              </a>
             </div>
-            <button
-              class="mt-8 w-full rounded-[50px] bg-dark text-white py-3 font-semibold hover:bg-dark/90 transition transform hover:scale-105 active:scale-95"
-            >
-              Learn More
-            </button>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- CTA Section -->
     <section class="bg-dark px-5 md:px-20 py-20 animate-fade-in">
       <div class="mx-auto max-w-4xl text-center">
         <h2 class="text-4xl md:text-5xl font-bold text-white mb-6">

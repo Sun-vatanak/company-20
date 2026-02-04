@@ -4,7 +4,7 @@ import Home from '../pages/Home.vue'
 import Service from '../pages/Service.vue'
 import Contact from '../pages/Contact.vue'
 import Agency from '../pages/Agency.vue'
-import CaseStudy from '../pages/CaseStudy.vue'
+import Project from '../pages/CaseStudy.vue'
 import Resources from '../pages/Resources.vue'
 
 const routes: RouteRecordRaw[] = [
@@ -29,9 +29,9 @@ const routes: RouteRecordRaw[] = [
     component: Agency,
   },
   {
-    path: '/case-study',
-    name: 'CaseStudy',
-    component: CaseStudy,
+    path: '/project',
+    name: 'Project',
+    component: Project,
   },
   {
     path: '/resources',
