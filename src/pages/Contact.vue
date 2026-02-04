@@ -6,7 +6,7 @@ const form = ref({
   email: '',
   phone: '',
   subject: '',
-  message: ''
+  message: '',
 })
 
 const submitted = ref(false)
@@ -23,7 +23,9 @@ const submitForm = () => {
 <template>
   <div class="min-h-screen bg-white">
     <!-- Hero Section -->
-    <section class="relative overflow-hidden bg-gradient-to-br from-white to-gray-lighter py-20 px-5 md:px-20">
+    <section
+      class="relative overflow-hidden bg-gradient-to-br from-white to-gray-lighter py-20 px-5 md:px-20"
+    >
       <div class="mx-auto max-w-6xl">
         <div class="flex flex-col gap-8 animate-fade-in">
           <h1 class="text-5xl md:text-6xl font-bold text-dark leading-tight animate-slide-down">
@@ -112,7 +114,7 @@ const submitForm = () => {
               <div class="text-4xl mb-4 group-hover:scale-125 transition duration-300">📍</div>
               <h3 class="text-2xl font-bold text-dark mb-2">Address</h3>
               <p class="text-gray">
-                2972 Westheimer Rd.<br>
+                2972 Westheimer Rd.<br />
                 Santa Ana, Illinois 85486
               </p>
             </div>
@@ -141,8 +143,8 @@ const submitForm = () => {
               <div class="text-4xl mb-4 group-hover:scale-125 transition duration-300">🕐</div>
               <h3 class="text-2xl font-bold text-dark mb-2">Business Hours</h3>
               <p class="text-gray">
-                Monday - Friday: 9:00 AM - 6:00 PM<br>
-                Saturday: 10:00 AM - 4:00 PM<br>
+                Monday - Friday: 9:00 AM - 6:00 PM<br />
+                Saturday: 10:00 AM - 4:00 PM<br />
                 Sunday: Closed
               </p>
             </div>
