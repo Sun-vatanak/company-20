@@ -1,11 +1,17 @@
 <script setup lang="ts">
+import teamImage from '@/assets/images/team.jpg'
+import userImage from '@/assets/images/user 1.jpg'
+import project1 from '@/assets/images/baa49c78a275f1ef12aa5a6e17fe3cd1.jpg'
+import project2 from '@/assets/images/f47d857c7f7c3d3849662aa63dc8c174.jpg'
+import project3 from '@/assets/images/project3.webp'
+import project4 from '@/assets/images/0 (1).svg'
+
 const team = [
-  { name: 'Sarah Johnson', role: 'Creative Director', bio: '10+ years of design excellence' },
-  { name: 'Mike Chen', role: 'SEO Specialist', bio: 'Expert in search optimization' },
-  { name: 'Emily Rodriguez', role: 'Content Lead', bio: 'Storytelling and brand voice' },
-  { name: 'David Park', role: 'Analytics Expert', bio: 'Data-driven strategies' },
-  { name: 'Lisa Thompson', role: 'Social Media Manager', bio: 'Community building specialist' },
-  { name: 'James Wilson', role: 'Business Developer', bio: 'Client success advocate' },
+  { image: userImage, name: 'Ngoun Oudom', role: 'Creative Director', bio: '10+ years of design excellence' },
+  { image: project1, name: 'Sun Vattank', role: 'Content Lead', bio: 'Storytelling and brand voice' },
+  { image: project2, name: 'Seth Sunheng', role: 'Analytics Expert', bio: 'Data-driven strategies' },
+  { image: project3, name: 'Phon Saro', role: 'Social Media Manager', bio: 'Community building specialist' },
+  { image: project4, name: 'Chhorm Rasan', role: 'Business Developer', bio: 'Client success advocate' },
 ]
 
 const values = [
@@ -60,8 +66,7 @@ const values = [
       <div class="mx-auto max-w-4xl">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
           <div class="rounded-[20px] overflow-hidden h-96 animate-fade-in">
-            <img
-              src="https://cdn.builder.io/api/v1/image/assets/TEMP/75a212ab82b6175c9862b125e0e23db8d369a58a"
+            <img :src="teamImage"
               alt="Our Story"
               class="w-full h-full object-cover hover:scale-110 transition duration-500"
             />
@@ -128,9 +133,7 @@ const values = [
             class="rounded-[20px] bg-white p-8 hover:shadow-xl transition transform hover:scale-105 animate-fade-in"
             :style="{ animationDelay: `${index * 0.08}s` }"
           >
-            <div
-              class="w-full h-48 rounded-lg bg-gray-lighter mb-4 hover:scale-110 transition duration-300"
-            ></div>
+            <img :src="member.image" alt="Team member" class="w-full h-48 rounded-lg mb-4 hover:scale-110 transition duration-300 object-cover" />
             <h3 class="text-xl font-bold text-dark">{{ member.name }}</h3>
             <p class="text-primary font-semibold text-sm mb-2">{{ member.role }}</p>
             <p class="text-gray">{{ member.bio }}</p>

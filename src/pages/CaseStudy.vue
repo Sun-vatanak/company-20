@@ -63,7 +63,7 @@ onMounted(async () => {
       <div class="mx-auto max-w-6xl">
         <div class="flex flex-col gap-8 animate-fade-in">
           <h1 class="text-5xl md:text-6xl font-bold text-dark leading-tight animate-slide-down">
-            Case Studies
+            Project Overview
           </h1>
           <p class="text-xl text-gray max-w-2xl animate-slide-down" style="animation-delay: 0.1s">
             Explore real-world examples of how we've helped companies achieve their goals.
